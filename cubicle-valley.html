@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cubicle Valley</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F4ECD8;
+    --parchment:#E8DAB4;
+    --parchment-dark:#D9C796;
+    --wood:#7A4B2E;
+    --wood-dark:#4A2E1A;
+    --wood-light:#9A6B45;
+    --grass:#5E8C4A;
+    --grass-dark:#3F6433;
+    --sky:#8FC4D9;
+    --gold:#E8A33D;
+    --gold-dark:#B97A22;
+    --ink:#3B2A1A;
+    --maroon:#8C3B3B;
+    --maroon-dark:#6B2424;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  /* Inter handles all reading copy. Pixelify Sans is reserved for short
+     display words (titles, names, buttons) where blocky letterforms read
+     fine — small paragraph text in a pixel font is where things get
+     misread, so it never touches body copy. */
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    overflow-x:hidden;
+  }
+
+  .mono{font-family:'JetBrains Mono', monospace;}
+  .pixel{font-family:'Pixelify Sans', monospace;}
+
+  h1,h2,h3{
+    font-family:'Pixelify Sans', monospace;
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.5px;
+  }
+
+  .pixel-frame{
+    clip-path:polygon(
+      8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px),
+      calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px), 0 8px
+    );
+  }
+
+  svg{image-rendering:pixelated;}
+
+  section{padding:80px 24px;position:relative;}
+  .wrap{max-width:1080px;margin:0 auto;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--wood-dark);
+    opacity:0.7;
+    margin-bottom:10px;
+  }
+
+  /* ---------- HUD ---------- */
+  .hud{
+    position:fixed;
+    top:14px; right:14px;
+    z-index:50;
+    background:var(--wood);
+    border:3px solid var(--wood-dark);
+    box-shadow:0 0 0 3px var(--gold);
+    padding:10px 14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--cream);
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:150px;
+    clip-path:polygon(6px 0,calc(100% - 6px) 0,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0 calc(100% - 6px),0 6px);
+    transition:box-shadow .4s ease;
+  }
+  .hud.clocked-out{box-shadow:0 0 0 3px var(--grass);}
+  .hud-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .hud-bar{
+    width:84px;height:10px;
+    background:var(--wood-dark);
+    border:1px solid var(--cream);
+    position:relative;
+  }
+  .hud-fill{
+    position:absolute; left:0;top:0;bottom:0;
+    background:var(--grass);
+    width:100%;
+    transition:width .6s ease, background .6s ease;
+  }
+  .hud-clock{font-weight:600;color:var(--gold);}
+  .hud-msg{
+    font-size:10.5px;
+    color:var(--cream);
+    background:var(--maroon-dark);
+    padding:5px 6px;
+    margin-top:2px;
+    line-height:1.4;
+    display:none;
+  }
+  .hud-msg.show{display:block;}
+  .hud.clocked-out .hud-msg.show{background:var(--grass-dark);}
+
+  /* ---------- TOAST ---------- */
+  .toast{
+    position:fixed;
+    top:96px; right:14px;
+    z-index:60;
+    background:var(--cream);
+    border:3px solid var(--wood-dark);
+    box-shadow:0 0 0 3px var(--gold);
+    padding:8px 12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink);
+    max-width:230px;
+    opacity:0;
+    transform:translateY(-6px);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:92vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(143,196,217,0.4), transparent 60%),
+      linear-gradient(to bottom, var(--sky) 0%, var(--cream) 70%);
+    padding-top:60px;
+  }
+  .hero-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:var(--wood-dark);
+    margin-bottom:18px;
+  }
+  .hero h1{
+    font-size:clamp(48px,9vw,96px);
+    color:var(--maroon-dark);
+    text-shadow:4px 4px 0 var(--gold);
+    line-height:1;
+  }
+  .hero p.sub{
+    margin-top:18px;
+    font-size:17px;
+    max-width:480px;
+    color:var(--wood-dark);
+  }
+
+  .dialogue{
+    margin-top:42px;
+    background:var(--cream);
+    border:4px solid var(--wood-dark);
+    box-shadow:0 0 0 4px var(--gold);
+    padding:22px 28px;
+    max-width:520px;
+    text-align:left;
+    position:relative;
+  }
+  .dialogue::before{
+    content:"";
+    position:absolute;
+    top:-14px; left:30px;
+    width:0;height:0;
+    border-left:10px solid transparent;
+    border-right:10px solid transparent;
+    border-bottom:14px solid var(--wood-dark);
+  }
+  .dialogue .name{
+    font-family:'Pixelify Sans',monospace;
+    font-size:15px;
+    color:var(--gold-dark);
+    margin-bottom:6px;
+  }
+  .dialogue p{margin:0;font-size:15px;}
+
+  .scroll-cue{
+    margin-top:50px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--wood-dark);
+    opacity:0.6;
+    animation:bob 1.6s infinite ease-in-out;
+  }
+  @keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
+
+  .section-title{
+    font-size:clamp(28px,4vw,42px);
+    color:var(--maroon-dark);
+    margin-bottom:8px;
+  }
+  .section-intro{
+    max-width:620px;
+    color:var(--wood-dark);
+    margin-bottom:48px;
+    font-size:15.5px;
+  }
+
+  /* ---------- VILLAGERS ---------- */
+  .villagers{background:var(--parchment);}
+  .v-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:24px;
+  }
+  .v-card{
+    background:var(--cream);
+    border:4px solid var(--wood-dark);
+    box-shadow:0 0 0 4px var(--wood-light), 0 6px 0 rgba(0,0,0,0.2);
+    padding:20px;
+    cursor:pointer;
+    transition:transform .15s ease;
+    user-select:none;
+  }
+  .v-card:hover{transform:translateY(-4px);}
+  .v-card:active{transform:translateY(0);}
+  .v-portrait{
+    width:72px;height:72px;
+    margin:0 auto 14px;
+    background:var(--parchment-dark);
+    border:3px solid var(--wood-dark);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .v-card h3{font-size:17px;color:var(--maroon-dark);text-align:center;}
+  .v-role{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:1px;
+    color:var(--wood-dark);
+    text-transform:uppercase;
+    margin:4px 0 12px;
+    opacity:.7;
+  }
+  .v-hearts{display:flex;justify-content:center;gap:4px;margin-bottom:12px;}
+  .heart{width:10px;height:10px;background:var(--maroon);clip-path:polygon(50% 15%,61% 0,80% 0,100% 20%,100% 40%,50% 100%,0 40%,0 20%,20% 0,39% 0);}
+  .heart.empty{background:var(--wood-light);opacity:.4;}
+  .v-line{font-size:13.5px;text-align:center;color:var(--ink);min-height:40px;}
+  .v-extra{display:none;margin-top:16px;}
+  .v-card.open .v-extra{display:block;}
+  .v-card.open .v-hint{display:none;}
+  .v-bubble{
+    position:relative;
+    background:var(--cream);
+    border:3px solid var(--wood-dark);
+    box-shadow:0 0 0 3px var(--gold);
+    padding:12px 14px;
+    margin:6px 0 12px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .v-bubble::before{
+    content:"";
+    position:absolute; top:-9px; left:18px;
+    width:0;height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+    border-bottom:9px solid var(--wood-dark);
+  }
+  .v-bubble-name{font-family:'Pixelify Sans',monospace;font-size:11.5px;color:var(--gold-dark);margin-bottom:4px;}
+  .v-bubble-text{font-size:13.5px;color:var(--ink);min-height:18px;}
+  .v-bubble-hint{font-family:'JetBrains Mono',monospace;font-size:9px;opacity:.45;margin-top:6px;text-align:right;}
+  .v-lore{
+    background:var(--parchment-dark);
+    border-top:2px dashed var(--wood-dark);
+    padding-top:10px;
+    font-size:12.5px;
+  }
+  .v-lore-label{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    opacity:.55;
+    margin-bottom:4px;
+  }
+  .v-hint{text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;opacity:.5;margin-top:10px;}
+
+  /* inside the expanded card */
+  .v-speech-box{
+    display:none;
+    margin-top:14px;
+    background:var(--cream);
+    border:3px solid var(--wood-dark);
+    box-shadow:2px 3px 0 var(--wood-dark);
+    padding:12px 14px;
+    position:relative;
+  }
+  .v-speech-box::before{
+    content:"";
+    position:absolute;
+    top:-10px; left:20px;
+    width:0;height:0;
+    border-left:8px solid transparent;
+    border-right:8px solid transparent;
+    border-bottom:10px solid var(--wood-dark);
+  }
+  .v-speech-name{
+    font-family:'Pixelify Sans',monospace;
+    font-size:13px;
+    color:var(--gold-dark);
+    margin-bottom:4px;
+  }
+  .v-speech-text{font-size:13.5px;color:var(--ink);}
+  .v-card.open .v-speech-box{display:block;}
+  .v-narration-label{
+    display:none;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    opacity:.45;
+    margin:12px 0 4px;
+  }
+  .v-card.open .v-narration-label{display:block;}
+
+  /* ---------- CC MODAL ---------- */
+  .cc-overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,0.65);
+    z-index:80;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .cc-overlay.show{display:flex;}
+  .cc-popup{
+    background:var(--cream);
+    border:4px solid var(--wood-dark);
+    box-shadow:0 0 0 4px var(--gold), 0 12px 0 rgba(0,0,0,0.35);
+    max-width:460px;
+    width:100%;
+    padding:28px;
+    position:relative;
+    animation:popIn .2s ease;
+  }
+  @keyframes popIn{from{transform:scale(0.88);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .cc-popup-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--wood-dark);
+    opacity:.6;
+    margin-bottom:8px;
+  }
+  .cc-popup-title{font-size:22px;color:var(--maroon-dark);margin-bottom:14px;}
+  .cc-popup-event{font-size:15px;color:var(--ink);line-height:1.65;margin-bottom:18px;}
+  .cc-popup-status{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--wood-dark);
+    background:var(--parchment);
+    border:2px solid var(--parchment-dark);
+    padding:8px 12px;
+    margin-bottom:20px;
+  }
+  .cc-popup-close{
+    font-family:'Pixelify Sans',monospace;
+    font-weight:600;
+    font-size:14px;
+    background:var(--gold);
+    border:2px solid var(--wood-dark);
+    box-shadow:0 3px 0 var(--gold-dark);
+    padding:10px 22px;
+    cursor:pointer;
+    color:var(--ink);
+    display:block;
+    width:100%;
+    text-align:center;
+  }
+  .cc-popup-close:active{transform:translateY(2px);box-shadow:0 1px 0 var(--gold-dark);}
+
+  /* restoration meter */
+  .cc-meter{margin-bottom:32px;}
+  .cc-meter-track{
+    width:100%;height:14px;
+    background:var(--wood-dark);
+    border:2px solid var(--wood-dark);
+    margin-bottom:8px;
+    position:relative;
+  }
+  .cc-meter-fill{
+    height:100%;
+    background:linear-gradient(to right, var(--maroon), var(--gold));
+    width:0%;
+    transition:width .5s ease;
+  }
+  .cc-meter-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--cream);
+    opacity:.85;
+    display:flex;
+    justify-content:space-between;
+  }
+  .cc-meter-status{font-size:13px;color:var(--gold);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+
+  /* ---------- QUESTS ---------- */
+  .quests{background:var(--cream);}
+  .q-board{background:var(--wood);border:4px solid var(--wood-dark);padding:6px;}
+  .q-list{background:var(--parchment);padding:10px;}
+  .q-item{background:var(--cream);border:2px solid var(--wood-dark);margin-bottom:12px;padding:16px 18px;}
+  .q-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+  .q-title{font-size:15.5px;color:var(--maroon-dark);font-weight:500;}
+  .q-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--wood-dark);opacity:.7;}
+  .q-btn{
+    font-family:'Pixelify Sans',monospace;
+    font-weight:600;
+    font-size:13px;
+    background:var(--gold);
+    border:2px solid var(--wood-dark);
+    box-shadow:0 3px 0 var(--gold-dark);
+    padding:8px 14px;
+    cursor:pointer;
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  .q-btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--gold-dark);}
+  .q-btn.done{background:var(--grass);box-shadow:0 3px 0 var(--grass-dark);cursor:default;}
+  .q-reveal{display:none;margin-top:12px;padding-top:12px;border-top:2px dashed var(--wood-light);font-size:13px;gap:5px;}
+  .q-item.accepted .q-reveal{display:flex;flex-direction:column;}
+  .q-reveal .reward{color:var(--grass-dark);}
+  .q-reveal .cost{color:var(--gold-dark);}
+  .q-reveal .penalty{color:var(--maroon-dark);}
+
+  /* ---------- MINES ---------- */
+  .mines{background:var(--ink);color:var(--cream);padding-bottom:0;}
+  .mines .section-intro, .mines .eyebrow{color:var(--cream);opacity:.75;}
+  .mines .section-title{color:var(--gold);}
+  .floor{
+    display:flex;align-items:center;gap:20px;padding:34px 0;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    opacity:0.35;transform:translateX(-10px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .floor.lit{opacity:1;transform:translateX(0);}
+  .floor-num{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);min-width:90px;}
+  .floor-name{font-size:17px;font-weight:600;}
+  .floor-desc{font-size:13px;opacity:.6;margin-top:4px;}
+  .floor:last-child{border-bottom:none;}
+  .floor.deep .floor-name{color:var(--maroon);}
+
+  /* ---------- FORAGING ---------- */
+  .forage{background:var(--parchment);}
+  .f-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;}
+  .f-card{
+    background:var(--cream);
+    border:3px solid var(--wood-dark);
+    padding:18px;
+    text-align:center;
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  .f-card:hover{transform:translateY(-3px);}
+  .f-card:active{transform:translateY(0);}
+  .f-icon{
+    width:56px;height:56px;
+    margin:0 auto 10px;
+    border:2px solid var(--wood-dark);
+    background:var(--parchment-dark);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .rarity{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    margin-bottom:6px;display:inline-block;padding:2px 8px;
+  }
+  .rarity.common{background:#cfd8c5;color:var(--ink);}
+  .rarity.uncommon{background:var(--sky);color:var(--ink);}
+  .rarity.rare{background:var(--gold);color:var(--ink);}
+  .rarity.legendary{background:var(--maroon);color:var(--cream);}
+  .rarity.cursed{background:var(--ink);color:var(--maroon);border:1px solid var(--maroon);}
+  .f-name{font-size:14px;color:var(--maroon-dark);margin-bottom:4px;font-weight:600;}
+  .f-desc{font-size:12px;color:var(--wood-dark);}
+  .f-effect{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--grass-dark);margin-top:8px;}
+  .f-effect.bad{color:var(--maroon-dark);}
+  .f-hint{font-family:'JetBrains Mono',monospace;font-size:9.5px;opacity:.45;margin-top:6px;}
+
+  /* ---------- FESTIVALS ---------- */
+  .festivals{background:var(--cream);}
+  .fest-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;}
+  .fest-card{background:var(--grass);color:var(--cream);border:4px solid var(--wood-dark);padding:20px;}
+  .fest-season{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:.8;}
+  .fest-name{font-size:18px;margin:6px 0 10px;}
+  .fest-desc{font-size:13px;opacity:.95;}
+
+  /* ---------- COMMUNITY CENTER ---------- */
+  .cc{background:var(--wood);color:var(--cream);}
+  .cc .section-title{color:var(--gold);}
+  .cc .section-intro{color:var(--cream);opacity:.8;}
+  .cc-content{display:grid;grid-template-columns:280px 1fr;gap:32px;align-items:start;}
+  .cc-scene-wrap{
+    background:var(--wood-dark);
+    padding:8px;
+    transition:box-shadow .3s ease;
+  }
+  .cc-scene-wrap.pulse{animation:scenePulse .5s ease;}
+  .cc-scene-wrap.full{box-shadow:0 0 0 3px var(--gold);}
+  @keyframes scenePulse{0%{transform:scale(1);}40%{transform:scale(1.03);}100%{transform:scale(1);}}
+  #ccScene{background:var(--cream);}
+  .cc-scene-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:9.5px;letter-spacing:1px;text-transform:uppercase;
+    text-align:center;opacity:.6;margin-top:8px;
+  }
+  .cc-progress{font-family:'JetBrains Mono',monospace;font-size:14px;margin-bottom:16px;color:var(--gold);}
+  .cc-list{list-style:none;padding:0;margin:0;display:grid;gap:10px;}
+  .cc-item{display:flex;align-items:center;gap:14px;background:var(--wood-dark);border:2px solid rgba(255,255,255,0.15);padding:14px 16px;cursor:pointer;transition:transform .12s ease;}
+  .cc-item:active{transform:scale(0.98);}
+  .cc-box{width:22px;height:22px;border:2px solid var(--gold);flex-shrink:0;position:relative;}
+  .cc-item.checked .cc-box{background:var(--gold);}
+  .cc-item.checked .cc-box::after{
+    content:"";position:absolute;left:5px;top:1px;width:6px;height:11px;
+    border:solid var(--wood-dark);border-width:0 3px 3px 0;transform:rotate(45deg);
+  }
+  .cc-item.checked .cc-text{text-decoration:line-through;opacity:.6;}
+  .cc-text{font-size:14.5px;}
+  .cc-complete{display:none;margin-top:24px;background:var(--gold);color:var(--ink);border:3px solid var(--wood-dark);padding:16px;font-size:14px;}
+  .cc-complete.show{display:block;}
+  /* ---------- FOOTER / STARDROP ---------- */
+  .stardrop{background:linear-gradient(to bottom, var(--ink), #1c130a);color:var(--cream);text-align:center;padding:90px 24px 60px;}
+  .drop-icon{width:46px;height:46px;margin:0 auto 22px;background:var(--gold);border:3px solid var(--cream);transform:rotate(45deg);animation:pulse 2.2s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,163,61,0.5);}50%{box-shadow:0 0 0 14px rgba(232,163,61,0);}}
+  .stardrop h2{font-size:clamp(24px,4vw,32px);color:var(--gold);}
+  .stardrop p{max-width:460px;margin:14px auto 0;opacity:.75;font-size:14px;}
+  .credit{margin-top:50px;font-family:'JetBrains Mono',monospace;font-size:11px;opacity:.45;}
+
+  @media (max-width:600px){
+    section{padding:56px 18px;}
+    .hero{padding-top:80px;}
+    .floor{flex-direction:column;align-items:flex-start;gap:4px;}
+    .hud{font-size:10px;padding:8px 10px;min-width:120px;}
+    .hud-bar{width:60px;}
+    .toast{right:10px;top:auto;bottom:20px;max-width:180px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hud" id="hud">
+  <div class="hud-row"><span>ENERGY</span><div class="hud-bar"><div class="hud-fill" id="energyFill"></div></div></div>
+  <div class="hud-row"><span>SHIFT</span><span class="hud-clock" id="shiftClock">9:00 AM</span></div>
+  <div class="hud-msg" id="hudMsg"></div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">a workplace simulator</div>
+  <h1>CUBICLE VALLEY</h1>
+  <p class="sub">You have inherited a desk. It is between two printers. One of them works.</p>
+  <div class="dialogue">
+    <div class="name">HR Onboarding Packet</div>
+    <p>Welcome to the Valley! Your grandfather once worked here too, before he "retired early" under circumstances nobody will fully explain. The farm is yours now — well, the cubicle is yours now. Same thing, smaller plot.</p>
+  </div>
+  <div class="scroll-cue">▼ SCROLL TO BEGIN YOUR SHIFT ▼</div>
+</section>
+
+<!-- VILLAGERS -->
+<section class="villagers">
+  <div class="wrap">
+    <div class="eyebrow">Townsfolk</div>
+    <h2 class="section-title">Meet the Villagers</h2>
+    <p class="section-intro">Six hearts to fill, zero of them recommend it. Click a villager to hear their dialogue.</p>
+    <div class="v-grid" id="villagerGrid"></div>
+  </div>
+</section>
+
+<!-- QUESTS -->
+<section class="quests">
+  <div class="wrap">
+    <div class="eyebrow">Quest Board</div>
+    <h2 class="section-title">Today's Quests</h2>
+    <p class="section-intro">Posted fresh every morning by someone who will not be doing any of them personally. Each one costs you energy and a chunk of the afternoon.</p>
+    <div class="q-board pixel-frame"><div class="q-list" id="questList"></div></div>
+  </div>
+</section>
+
+<!-- MINES -->
+<section class="mines">
+  <div class="wrap">
+    <div class="eyebrow">The Mines</div>
+    <h2 class="section-title">Descend Into the Inbox</h2>
+    <p class="section-intro">Every floor down is a little older and a little angrier. Keep scrolling if you dare.</p>
+    <div id="floorList"></div>
+  </div>
+</section>
+
+<!-- FORAGING -->
+<section class="forage">
+  <div class="wrap">
+    <div class="eyebrow">Foraging</div>
+    <h2 class="section-title">Break Room Drops</h2>
+    <p class="section-intro">What you find depends entirely on luck, and slightly on whether Greg from Accounting got there first. Click an item to take your break.</p>
+    <div class="f-grid" id="forageGrid"></div>
+  </div>
+</section>
+
+<!-- FESTIVALS -->
+<section class="festivals">
+  <div class="wrap">
+    <div class="eyebrow">Calendar</div>
+    <h2 class="section-title">Festivals of the Valley</h2>
+    <p class="section-intro">Mandatory fun, scheduled well in advance.</p>
+    <div class="fest-grid" id="festGrid"></div>
+  </div>
+</section>
+
+<!-- COMMUNITY CENTER -->
+<section class="cc">
+  <div class="wrap">
+    <div class="eyebrow">Restoration Project</div>
+    <h2 class="section-title">The Community Center Bundle</h2>
+    <p class="section-intro">Donate each item to restore the office to its former glory. Something will happen when you do. Whether it helps is a separate question.</p>
+    <div class="cc-meter">
+      <div class="cc-meter-track"><div class="cc-meter-fill" id="meterFill"></div></div>
+      <div class="cc-meter-label"><span>CONDEMNED</span><span>RESTORED</span></div>
+      <div class="cc-meter-status" id="meterStatus">Office Status: Condemned</div>
+    </div>
+    <div class="cc-progress" id="ccProgress">0 / 6 DONATED</div>
+    <ul class="cc-list" id="ccList"></ul>
+    <div class="cc-complete" id="ccComplete">
+      <strong>BUNDLE COMPLETE!</strong> You have unlocked: a four-day work week. (Citation needed. Please do not ask Carol to confirm this.)
+    </div>
+  </div>
+</section>
+
+<!-- CC DONATION MODAL -->
+<div class="cc-overlay" id="ccOverlay">
+  <div class="cc-popup">
+    <div class="cc-popup-eyebrow">◆ Restoration Log</div>
+    <h3 class="cc-popup-title" id="popupTitle"></h3>
+    <p class="cc-popup-event" id="popupEvent"></p>
+    <div class="cc-popup-status" id="popupStatus"></div>
+    <button class="cc-popup-close" id="popupClose">Noted. Back to work.</button>
+  </div>
+</div>
+
+<!-- STARDROP -->
+<section class="stardrop">
+  <div class="drop-icon"></div>
+  <h2>You Found a Stardrop</h2>
+  <p>It's the promotion. It has always been the promotion. It remains, as ever, "in conversation with leadership."</p>
+  <div class="credit">CUBICLE VALLEY — not affiliated with ConcernedApe or, increasingly, productivity.</div>
+</section>
+
+<script>
+  // ============================================================
+  // PIXEL SPRITE ENGINE — everything below is drawn from rects on
+  // a 16x16 grid, so every avatar/icon is genuine blocky pixel art
+  // rather than a single flat-color placeholder.
+  // ============================================================
+  function svgRects(rects, vb, px){
+    vb = vb || 16; px = px || 64;
+    const body = rects.map(r =>
+      `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="${r.fill}"${r.opacity?` opacity="${r.opacity}"`:''}/>`
+    ).join('');
+    return `<svg width="${px}" height="${px}" viewBox="0 0 ${vb} ${vb}" shape-rendering="crispEdges">${body}</svg>`;
+  }
+
+  const INK = '#2b1d12';
+
+  function bustRects(v){
+    return [
+      {x:4,y:1,w:8,h:3,fill:v.hair},
+      {x:3,y:4,w:1,h:4,fill:v.hair},
+      {x:12,y:4,w:1,h:4,fill:v.hair},
+      {x:4,y:4,w:8,h:5,fill:v.skin},
+      {x:6,y:9,w:4,h:1,fill:v.skin},
+      {x:2,y:10,w:12,h:5,fill:v.shirt},
+    ];
+  }
+  function eyesRects(){
+    return [{x:6,y:6,w:1,h:1,fill:INK},{x:9,y:6,w:1,h:1,fill:INK}];
+  }
+  function accessoryRects(v){
+    const c = v.accessoryColor || v.hair;
+    switch(v.accessoryType){
+      case 'headset': return [{x:2,y:4,w:2,h:1,fill:INK},{x:2,y:5,w:1,h:2,fill:INK}];
+      case 'glasses': return [{x:5,y:6,w:2,h:1,fill:c},{x:8,y:6,w:2,h:1,fill:c},{x:7,y:6,w:1,h:1,fill:c}];
+      case 'sunglasses': return [{x:4,y:6,w:8,h:1,fill:'#1a1a1a'}];
+      case 'badgeTop': return [{x:13,y:2,w:2,h:2,fill:c}];
+      case 'badgeBottom': return [{x:13,y:11,w:2,h:2,fill:c}];
+      default: return [];
+    }
+  }
+  function villagerSVG(v){
+    let rects = bustRects(v);
+    if(!v.hideEyes) rects = rects.concat(eyesRects());
+    if(v.accessoryType === 'bangs') rects.push({x:4,y:5,w:8,h:2,fill:v.hair});
+    rects = rects.concat(accessoryRects(v));
+    return svgRects(rects, 16, 64);
+  }
+
+  // ---------- DATA: VILLAGERS ----------
+  const villagers = [
+    {name:"Reply-All Randy", role:"The Mailroom", hearts:2,
+     skin:'#e8b888', hair:'#cf6a2b', shirt:'#E8A33D', accessoryType:'headset',
+     line:"“Just correcting a typo — CC'ing everyone for visibility.”",
+     dialogueLines:["Quick note — just spotted a typo in my last email, fixing now!","Adding the whole team to this thread so everyone's in the loop."],
+     dialogue:"Randy has sent four follow-up emails today, each correcting a typo in the last one. He has not yet noticed the new typo."},
+    {name:"Circle-Back Carol", role:"Management", hearts:1,
+     skin:'#e0a878', hair:'#5b6b7a', shirt:'#8FC4D9', accessoryType:'glasses', accessoryColor:'#3B2A1A',
+     line:"“Let's circle back on this next week.”",
+     dialogueLines:["Let's table this and circle back next week.","I just want to make sure we're aligned before we... circle back."],
+     dialogue:"Carol has circled back on this topic eleven times since March. The circle has not yet closed. Some say it never will."},
+    {name:"Heads-Down Hank", role:"Engineering", hearts:3,
+     skin:'#d9a06a', hair:'#3b2e22', shirt:'#5E8C4A', accessoryType:'bangs', hideEyes:true,
+     line:"“Still heads-down on that thing. Big things coming.”",
+     dialogueLines:["Can't talk right now, very heads-down.","It's coming along. It's a process. Big things, though."],
+     dialogue:"Nobody has seen what Hank is working on. There is a project page. The project page is empty."},
+    {name:"Sync Sandra", role:"Project Management", hearts:2,
+     skin:'#f0c39a', hair:'#b5447a', shirt:'#8C3B3B', accessoryType:'badgeTop', accessoryColor:'#E8A33D',
+     line:"“Can we grab a quick sync? Forty-five minutes, no agenda.”",
+     dialogueLines:["Can we grab a quick sync? No agenda, just vibes.","Let's take this offline and sync up after the sync."],
+     dialogue:"The sync ran ninety minutes. Nothing was decided. A second sync was scheduled to discuss what was discussed."},
+    {name:"Out-of-Office Owen", role:"Sales", hearts:1,
+     skin:'#caa06e', hair:'#7a5a3a', shirt:'#9A6B45', accessoryType:'sunglasses',
+     line:"“I'm OOO today — please expect a delayed response.”",
+     dialogueLines:["I'm OOO today, but I did see your message.","Setting my status to 'in a meeting' so nobody asks anything."],
+     dialogue:"Owen is not on vacation. Owen is simply choosing, today, not to be reachable. Respect the boundary."},
+    {name:"Reaction-Emoji Renee", role:"Design", hearts:4,
+     skin:'#e8c9a0', hair:'#e8c93d', shirt:'#7A4B2E', accessoryType:'badgeBottom', accessoryColor:'#5E8C4A',
+     line:"“👍”",
+     dialogueLines:["👍","😅","🔥","🙃"],
+     dialogue:"Renee communicates exclusively through emoji reactions. A single thumbs-up can mean agreement, dismissal, or mild despair. You will never know which."}
+  ];
+
+  // ---------- DATA: QUESTS (each has an energy + time cost) ----------
+  const quests = [
+    {title:"Attend a meeting that could've been an email", meta:"Daily · Easy",
+     reward:"+10 XP, one stale donut", cost:"−15 energy · +25 min",
+     penalty:"Skip it and you'll get three follow-up emails recapping it anyway.", energy:-15, time:25},
+    {title:"Decode what 'circle back' actually means", meta:"Daily · Medium",
+     reward:"+1 Patience, minor enlightenment", cost:"−10 energy · +10 min",
+     penalty:"Failure results in a second circle-back, scheduled for next week.", energy:-10, time:10},
+    {title:"Survive the all-hands without falling asleep", meta:"Weekly · Hard",
+     reward:"One branded pen, mild pride", cost:"−25 energy · +40 min",
+     penalty:"Falling asleep on camera cannot be undone. Only outlasted.", energy:-25, time:40},
+    {title:"Find a printer that actually works", meta:"Legendary · Very Hard",
+     reward:"The Legendary Stapler", cost:"−20 energy · +20 min",
+     penalty:"This quest has no known completions. Proceed anyway.", energy:-20, time:20},
+    {title:"Pretend to understand the new tool nobody trained you on", meta:"Daily · Medium",
+     reward:"Imposter Syndrome −5 (briefly)", cost:"−20 energy · +25 min",
+     penalty:"Asking a clarifying question in the group chat is not an option.", energy:-20, time:25}
+  ];
+
+  const floors = [
+    {num:"FLOOR 1", name:"Unread Slacks (47)", desc:"Mostly emoji reactions to a message you already read."},
+    {num:"FLOOR 5", name:"CC'd Threads From March", desc:"You were never the intended recipient. You are now the only reader."},
+    {num:"FLOOR 12", name:'"URGENT" Emails That Weren\u2019t', desc:"Sent at 4:58pm on a Friday, for reasons that remain unclear."},
+    {num:"FLOOR 20", name:"The Shared Drive Nobody Organized", desc:"Folders named 'v1', 'v2_actually', and 'FINAL_FINAL_useThisOne'."},
+    {num:"FLOOR 30", name:"That One Spreadsheet Everything Depends On", deep:true, desc:"Built in 2019. Maintained by no one. Loved by everyone, secretly."},
+    {num:"FLOOR 42", name:"The Original Decision No One Remembers Making", deep:true, desc:"You have reached the bottom. It was a Tuesday. There is no record of why."}
+  ];
+
+  // ---------- DATA: FORAGE (energy gain on click) ----------
+  const forage = [
+    {name:"Stale Donut", rarity:"common", energy:12, desc:"Always present. Never fresh. A constant.",
+     toast:"+12 energy. It's mostly air.",
+     sprite:()=>svgRects([
+       {x:3,y:6,w:10,h:6,fill:'#cfa15a'},
+       {x:3,y:6,w:10,h:3,fill:'#E8A33D'},
+       {x:7,y:8,w:2,h:2,fill:'#E8DAB4'},
+       {x:5,y:6,w:1,h:1,fill:'#8C3B3B'},
+       {x:9,y:6,w:1,h:1,fill:'#5E8C4A'},
+       {x:11,y:7,w:1,h:1,fill:'#8FC4D9'}
+     ],16,56)},
+    {name:"Mystery Tupperware", rarity:"rare", energy:22, desc:"Labeled \u201cDO NOT EAT\u201d in three different handwritings.",
+     toast:"+22 energy. Or food poisoning. We'll see.",
+     sprite:()=>svgRects([
+       {x:3,y:7,w:10,h:6,fill:'#5E8C4A',opacity:0.55},
+       {x:2,y:5,w:12,h:3,fill:'#3F6433'},
+       {x:6,y:9,w:1,h:1,fill:'#1c130a'},
+       {x:9,y:10,w:1,h:1,fill:'#1c130a'},
+       {x:8,y:8,w:1,h:1,fill:'#8C3B3B'}
+     ],16,56)},
+    {name:"Birthday Cake Leftovers", rarity:"uncommon", energy:16, desc:"Whose birthday? Nobody can say for certain.",
+     toast:"+16 energy. Happy birthday to someone, probably.",
+     sprite:()=>svgRects([
+       {x:3,y:11,w:10,h:2,fill:'#7A4B2E'},
+       {x:4,y:9,w:8,h:2,fill:'#9A6B45'},
+       {x:5,y:7,w:6,h:2,fill:'#E8A33D'},
+       {x:6,y:5,w:4,h:2,fill:'#F4ECD8'},
+       {x:7,y:4,w:2,h:1,fill:'#8C3B3B'}
+     ],16,56)},
+    {name:"Someone's Actually Good Cookies", rarity:"legendary", energy:35, desc:"A rumor more than an item. Gone within minutes.",
+     toast:"+35 energy. A rare and beautiful day.",
+     sprite:()=>svgRects([
+       {x:3,y:4,w:10,h:10,fill:'#cfa15a'},
+       {x:5,y:6,w:1,h:1,fill:'#3B2A1A'},
+       {x:9,y:6,w:1,h:1,fill:'#3B2A1A'},
+       {x:7,y:9,w:1,h:1,fill:'#3B2A1A'},
+       {x:4,y:9,w:1,h:1,fill:'#3B2A1A'},
+       {x:10,y:11,w:1,h:1,fill:'#3B2A1A'}
+     ],16,56)},
+    {name:"The Vending Machine", rarity:"cursed", energy:-5, desc:"Takes your money. Gives you nothing. Eternal.",
+     toast:"\u2212$1.50, \u22125 energy. The machine wins again.",
+     sprite:()=>svgRects([
+       {x:3,y:2,w:10,h:13,fill:'#3B2A1A'},
+       {x:4,y:3,w:8,h:6,fill:'#8FC4D9',opacity:0.85},
+       {x:5,y:5,w:2,h:3,fill:'#E8A33D'},
+       {x:9,y:5,w:2,h:3,fill:'#8C3B3B'},
+       {x:11,y:10,w:1,h:1,fill:'#E8A33D'},
+       {x:11,y:12,w:1,h:1,fill:'#E8A33D'},
+       {x:4,y:14,w:8,h:1,fill:'#1c130a'}
+     ],16,56)}
+  ];
+
+  const festivals = [
+    {season:"Spring", name:"The Egg Festival", desc:"Known elsewhere as the all-hands. Attendance is, in fact, mandatory."},
+    {season:"Summer", name:"The Flower Dance", desc:"The team offsite. Trust falls are involved. Nobody asked for trust falls."},
+    {season:"Fall", name:"The Luau", desc:"The potluck. Three people brought chips. Someone brought a 'dish' that was just chips, repackaged."},
+    {season:"Winter", name:"Winter Star", desc:"Performance review season. Gifts are exchanged in the form of feedback."},
+    {season:"Fall", name:"Spirit's Eve", desc:"Layoff rumor season. Costumes optional. Anxiety mandatory."}
+  ];
+
+  const ccItems = [
+    {
+      text: "A stapler that actually staples",
+      event: "The IT department has been contacted. They asked if you tried turning it off and on again. It is a stapler. The stapler now works. Nobody will thank you."
+    },
+    {
+      text: "A chair that doesn't squeak",
+      event: "Maintenance arrived, tightened a single bolt, and left. The squeak has migrated to the chair beside yours. Progress is complicated."
+    },
+    {
+      text: "WiFi that reaches the back corner",
+      event: "The router has been moved six inches to the left. The back corner now has one bar. This is considered, by the office, a success. A celebration email is being drafted."
+    },
+    {
+      text: "A microwave that isn't faintly terrifying",
+      event: "The old microwave has been removed. No one asked what was inside it. No one will. A newer model has been installed. It already smells of fish. A new era begins."
+    },
+    {
+      text: "One functioning whiteboard marker",
+      event: "A working blue marker has been sourced from the stationery cupboard. It writes. It is labeled with someone's name. That name is not yours. It will be gone by noon. Greg will not apologize."
+    },
+    {
+      text: "Meetings that end on time",
+      event: "This feature is in beta. The beta has no scheduled end date. A meeting has been called to discuss the beta timeline. The meeting ran over."
+    }
+  ];
+
+  const RESTORATION_MILESTONES = [
+    "Condemned",
+    "Technically Occupiable",
+    "Budget Startup Vibes",
+    "Functional Misery",
+    "Mid-Tier Corporation",
+    "Almost Human",
+    "✦ Community Center Restored ✦"
+  ];
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  const vGrid = document.getElementById('villagerGrid');
+  villagers.forEach(v=>{
+    const hearts = Array.from({length:5},(_,h)=>`<div class="heart ${h<v.hearts?'':'empty'}"></div>`).join('');
+    const speechLines = v.dialogueLines.map(l => `<p style="margin:0 0 6px">${l}</p>`).join('');
+    const card = document.createElement('div');
+    card.className='v-card';
+    card.innerHTML = `
+      <div class="v-portrait">${villagerSVG(v)}</div>
+      <h3>${v.name}</h3>
+      <div class="v-role">${v.role}</div>
+      <div class="v-hearts">${hearts}</div>
+      <div class="v-line">${v.line}</div>
+      <div class="v-speech-box">
+        <div class="v-speech-name">${v.name}</div>
+        <div class="v-speech-text">${speechLines}</div>
+      </div>
+      <div class="v-narration-label">◆ Almanac</div>
+      <div class="v-dialogue">${v.dialogue}</div>
+      <div class="v-hint">tap to talk</div>
+    `;
+    card.addEventListener('click', ()=> card.classList.toggle('open'));
+    vGrid.appendChild(card);
+  });
+
+  const qList = document.getElementById('questList');
+  quests.forEach(q=>{
+    const item = document.createElement('div');
+    item.className='q-item';
+    item.innerHTML = `
+      <div class="q-top">
+        <div><div class="q-title">${q.title}</div><div class="q-meta">${q.meta}</div></div>
+        <button class="q-btn">Accept Quest</button>
+      </div>
+      <div class="q-reveal">
+        <span class="reward">REWARD: ${q.reward}</span>
+        <span class="cost">COST: ${q.cost}</span>
+        <span class="penalty">IF SKIPPED: ${q.penalty}</span>
+      </div>
+    `;
+    const btn = item.querySelector('.q-btn');
+    btn.addEventListener('click', ()=>{
+      if(item.classList.contains('accepted')) return;
+      item.classList.add('accepted');
+      btn.textContent='Quest Complete!';
+      btn.classList.add('done');
+      setEnergy(q.energy);
+      advanceClock(q.time);
+      showToast(`${q.energy} energy · +${q.time} min — "${q.title}" is done.`);
+    });
+    qList.appendChild(item);
+  });
+
+  const floorList = document.getElementById('floorList');
+  floors.forEach(f=>{
+    const row = document.createElement('div');
+    row.className = 'floor' + (f.deep ? ' deep' : '');
+    row.innerHTML = `
+      <div class="floor-num mono">${f.num}</div>
+      <div><div class="floor-name">${f.name}</div><div class="floor-desc">${f.desc}</div></div>
+    `;
+    floorList.appendChild(row);
+  });
+  const floorObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('lit'); });
+  }, {threshold:0.4});
+  document.querySelectorAll('.floor').forEach(f=> floorObserver.observe(f));
+
+  const fGrid = document.getElementById('forageGrid');
+  forage.forEach(f=>{
+    const card = document.createElement('div');
+    card.className='f-card';
+    const isBad = f.energy < 0;
+    card.innerHTML = `
+      <div class="f-icon">${f.sprite()}</div>
+      <span class="rarity ${f.rarity}">${f.rarity}</span>
+      <div class="f-name">${f.name}</div>
+      <div class="f-desc">${f.desc}</div>
+      <div class="f-effect ${isBad?'bad':''}">${isBad? '−'+Math.abs(f.energy):'+'+f.energy} energy on pickup</div>
+      <div class="f-hint">click to take your break</div>
+    `;
+    card.addEventListener('click', ()=>{
+      setEnergy(f.energy);
+      advanceClock(isBad ? 2 : 5);
+      showToast(f.toast);
+    });
+    fGrid.appendChild(card);
+  });
+
+  const festGrid = document.getElementById('festGrid');
+  festivals.forEach(f=>{
+    const card = document.createElement('div');
+    card.className='fest-card';
+    card.innerHTML = `
+      <div class="fest-season mono">${f.season}</div>
+      <div class="fest-name">${f.name}</div>
+      <div class="fest-desc">${f.desc}</div>
+    `;
+    festGrid.appendChild(card);
+  });
+
+  const ccList = document.getElementById('ccList');
+  const ccProgress = document.getElementById('ccProgress');
+  const ccComplete = document.getElementById('ccComplete');
+  const ccOverlay = document.getElementById('ccOverlay');
+  const popupTitle = document.getElementById('popupTitle');
+  const popupEvent = document.getElementById('popupEvent');
+  const popupStatus = document.getElementById('popupStatus');
+  const meterFill = document.getElementById('meterFill');
+  const meterStatus = document.getElementById('meterStatus');
+
+  function updateMeter(donated){
+    const pct = (donated / ccItems.length) * 100;
+    meterFill.style.width = pct + '%';
+    meterStatus.textContent = 'Office Status: ' + RESTORATION_MILESTONES[donated];
+  }
+
+  function openModal(item, donated){
+    popupTitle.textContent = item.text;
+    popupEvent.textContent = item.event;
+    popupStatus.textContent =
+      'Restoration ' + Math.round((donated/ccItems.length)*100) + '% complete — ' +
+      RESTORATION_MILESTONES[donated];
+    ccOverlay.classList.add('show');
+  }
+
+  document.getElementById('popupClose').addEventListener('click', ()=>{
+    ccOverlay.classList.remove('show');
+  });
+  ccOverlay.addEventListener('click', e=>{
+    if(e.target === ccOverlay) ccOverlay.classList.remove('show');
+  });
+
+  ccItems.forEach((item, idx)=>{
+    const li = document.createElement('li');
+    li.className='cc-item';
+    li.innerHTML = `<div class="cc-box"></div><span class="cc-text">${item.text}</span>`;
+    li.addEventListener('click', ()=>{
+      const wasChecked = li.classList.contains('checked');
+      li.classList.toggle('checked');
+      const donated = document.querySelectorAll('.cc-item.checked').length;
+      ccProgress.textContent = `${donated} / ${ccItems.length} DONATED`;
+      ccComplete.classList.toggle('show', donated === ccItems.length);
+      updateMeter(donated);
+      if(!wasChecked){
+        advanceClock(10);
+        openModal(item, donated);
+      }
+    });
+    ccList.appendChild(li);
+  });
+
+  updateMeter(0);
+
+  // ============================================================
+  // ENERGY + SHIFT CLOCK — the actual game state
+  // ============================================================
+  const fill = document.getElementById('energyFill');
+  const hud = document.getElementById('hud');
+  const hudMsg = document.getElementById('hudMsg');
+  const shiftClockEl = document.getElementById('shiftClock');
+
+  let energy = 100;
+  let totalMinutes = 540;     // 9:00 AM
+  const SHIFT_END = 1020;     // 5:00 PM
+  let shiftOver = false;
+
+  function formatTime(mins){
+    let h = Math.floor(mins/60) % 24;
+    const m = mins % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    let h12 = h % 12; if(h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2,'0')} ${ampm}`;
+  }
+
+  function setEnergy(delta){
+    energy = Math.max(0, Math.min(100, energy + delta));
+    fill.style.width = energy + '%';
+    fill.style.background = energy < 25 ? 'var(--maroon)' : energy < 55 ? 'var(--gold)' : 'var(--grass)';
+    if(energy <= 20 && !shiftOver){
+      hudMsg.textContent = "You're exhausted. Grab a break room item.";
+      hudMsg.classList.add('show');
+    } else if(!shiftOver){
+      hudMsg.classList.remove('show');
+    }
+  }
+
+  function advanceClock(mins){
+    if(shiftOver) return;
+    totalMinutes = Math.min(SHIFT_END, totalMinutes + mins);
+    shiftClockEl.textContent = formatTime(totalMinutes);
+    if(totalMinutes >= SHIFT_END){
+      shiftOver = true;
+      hud.classList.add('clocked-out');
+      hudMsg.textContent = "Shift complete. Go home.";
+      hudMsg.classList.add('show');
+    }
+  }
+
+  function showToast(msg){
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(()=> t.classList.add('show'));
+    setTimeout(()=>{
+      t.classList.remove('show');
+      setTimeout(()=> t.remove(), 300);
+    }, 2200);
+  }
+
+  setEnergy(0);
+  advanceClock(0);
+  setInterval(()=> advanceClock(5), 5000); // the workday passes on its own, slowly
+</script>
+</body>
+</html>
