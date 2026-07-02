@@ -1,4 +1,4 @@
-# 🌾 Cubicle Valley
+# 🌾 [Cubicle Valley](https://dunkyoreo.github.io/CubicleValley/)
 
 This started as a "what if Stardew Valley, but your desk job" idea and became a working website in a single afternoon of vibe coding — and honestly, it was a blast. No sprints, no standups, no PRDs. Just vibes and pixel art.
 
